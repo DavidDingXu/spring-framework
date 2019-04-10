@@ -47,10 +47,12 @@ public class FileSystemResourceLoader extends DefaultResourceLoader {
 	 * @see org.springframework.web.context.support.ServletContextResourceLoader#getResourceByPath
 	 */
 	@Override
+	// 截取首 /
 	protected Resource getResourceByPath(String path) {
 		if (path.startsWith("/")) {
 			path = path.substring(1);
 		}
+		// 创建 FileSystemContextResource 类型的资源
 		return new FileSystemContextResource(path);
 	}
 

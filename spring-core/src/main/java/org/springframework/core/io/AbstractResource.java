@@ -16,6 +16,10 @@
 
 package org.springframework.core.io;
 
+import org.springframework.core.NestedIOException;
+import org.springframework.lang.Nullable;
+import org.springframework.util.ResourceUtils;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -25,10 +29,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-
-import org.springframework.core.NestedIOException;
-import org.springframework.lang.Nullable;
-import org.springframework.util.ResourceUtils;
 
 /**
  * Convenience base class for {@link Resource} implementations,
@@ -49,9 +49,10 @@ public abstract class AbstractResource implements Resource {
 	 * This will cover both directories and content resources.
 	 */
 	@Override
+	//判断文件是否存在，若判断过程产生异常（因为会调用SecurityManager来判断），就关闭对应的流
 	public boolean exists() {
-		// Try file existence: can we find the file in the file system?
 		try {
+			//基于 File 进行判断
 			return getFile().exists();
 		}
 		catch (IOException ex) {
@@ -71,6 +72,7 @@ public abstract class AbstractResource implements Resource {
 	 * that {@link #exists() exists} (revised as of 5.1).
 	 */
 	@Override
+	//只要存在就返回true，表示可读
 	public boolean isReadable() {
 		return exists();
 	}
@@ -79,6 +81,7 @@ public abstract class AbstractResource implements Resource {
 	 * This implementation always returns {@code false}.
 	 */
 	@Override
+	//直接返回 false，表示未被打开
 	public boolean isOpen() {
 		return false;
 	}
@@ -87,6 +90,7 @@ public abstract class AbstractResource implements Resource {
 	 * This implementation always returns {@code false}.
 	 */
 	@Override
+	//直接返回false，表示不为 File
 	public boolean isFile() {
 		return false;
 	}
@@ -96,6 +100,7 @@ public abstract class AbstractResource implements Resource {
 	 * that the resource cannot be resolved to a URL.
 	 */
 	@Override
+	//抛出 FileNotFoundException 异常，交给子类实现
 	public URL getURL() throws IOException {
 		throw new FileNotFoundException(getDescription() + " cannot be resolved to URL");
 	}
@@ -105,6 +110,7 @@ public abstract class AbstractResource implements Resource {
 	 * by {@link #getURL()}.
 	 */
 	@Override
+	//基于 getURL() 返回的 URL 构建 URI
 	public URI getURI() throws IOException {
 		URL url = getURL();
 		try {
@@ -120,6 +126,7 @@ public abstract class AbstractResource implements Resource {
 	 * that the resource cannot be resolved to an absolute file path.
 	 */
 	@Override
+	//抛出 FileNotFoundException 异常，交给子类实现
 	public File getFile() throws IOException {
 		throw new FileNotFoundException(getDescription() + " cannot be resolved to absolute file path");
 	}
@@ -131,6 +138,7 @@ public abstract class AbstractResource implements Resource {
 	 * but mirrored here for efficient JVM-level dispatching in a class hierarchy.
 	 */
 	@Override
+	//根据 getInputStream() 的返回结果构建 ReadableByteChannel
 	public ReadableByteChannel readableChannel() throws IOException {
 		return Channels.newChannel(getInputStream());
 	}
@@ -142,11 +150,13 @@ public abstract class AbstractResource implements Resource {
 	 * @see #getInputStream()
 	 */
 	@Override
+	//获取资源的长度
+	//这个资源内容长度实际就是资源的字节长度，通过全部读取一遍来判断
 	public long contentLength() throws IOException {
 		InputStream is = getInputStream();
 		try {
 			long size = 0;
-			byte[] buf = new byte[256];
+			byte[] buf = new byte[256];// 每次最多读取 256 字节
 			int read;
 			while ((read = is.read(buf)) != -1) {
 				size += read;
@@ -168,6 +178,7 @@ public abstract class AbstractResource implements Resource {
 	 * @see #getFileForLastModifiedCheck()
 	 */
 	@Override
+	// 返回资源最后的修改时间
 	public long lastModified() throws IOException {
 		File fileToCheck = getFileForLastModifiedCheck();
 		long lastModified = fileToCheck.lastModified();
@@ -195,6 +206,7 @@ public abstract class AbstractResource implements Resource {
 	 * that relative resources cannot be created for this resource.
 	 */
 	@Override
+	//抛出 FileNotFoundException 异常，交给子类实现
 	public Resource createRelative(String relativePath) throws IOException {
 		throw new FileNotFoundException("Cannot create a relative resource for " + getDescription());
 	}
@@ -205,6 +217,7 @@ public abstract class AbstractResource implements Resource {
 	 */
 	@Override
 	@Nullable
+	//获取资源名称，默认返回 null ，交给子类实现
 	public String getFilename() {
 		return null;
 	}

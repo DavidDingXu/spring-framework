@@ -41,6 +41,8 @@ public interface ProtocolResolver {
 	 * matches this resolver's protocol, or {@code null} otherwise
 	 */
 	@Nullable
+	//使用指定的 ResourceLoader ，解析指定的 location 。
+	//若成功，则返回对应的 Resource 。
 	Resource resolve(String location, ResourceLoader resourceLoader);
 
 }
